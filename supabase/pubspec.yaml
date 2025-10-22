@@ -1,0 +1,10 @@
+name: migrate_remote
+description: A script to migrate SQL to remote Supabase instance.
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  supabase: ^2.10.0
+  http: ^1.1.2
