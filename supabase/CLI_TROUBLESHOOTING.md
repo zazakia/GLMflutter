@@ -1,6 +1,200 @@
 # Supabase CLI Troubleshooting Guide
 
-## Issues We Encountered
+## Phase 1: CLI Setup and Authentication
+
+This section covers the most common issues encountered during Phase 1 of the migration process - installing and authenticating the Supabase CLI.
+
+### Before You Start
+
+**Prerequisites for CLI Migration:**
+- Windows 10/11 with latest updates
+- Stable internet connection
+- Supabase account with active project
+- Default browser configured for OAuth login
+- Firewall/antivirus allowing connections to supabase.com
+
+### Common Error Scenarios
+
+#### "CLI not found" Error
+**Symptoms:**
+- `supabase` command not recognized
+- Script reports "Supabase CLI is not installed or not in PATH"
+
+**Solutions for Windows:**
+1. **Via npm (Recommended):**
+   ```bash
+   npm install -g supabase
+   ```
+
+2. **Via Scoop:**
+   ```bash
+   scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+   scoop install supabase
+   ```
+
+3. **Direct Download:**
+   - Visit https://github.com/supabase/cli/releases
+   - Download the latest Windows binary
+   - Extract to a folder in your PATH (e.g., C:\Program Files\Supabase CLI)
+   - Add to PATH: `setx PATH "%PATH%;C:\Program Files\Supabase CLI"`
+
+4. **Verify Installation:**
+   ```bash
+   supabase --version
+   ```
+
+#### "Update failed" Error
+**Symptoms:**
+- Script reports "Failed to update Supabase CLI"
+- Network timeout during update
+
+**Solutions:**
+1. **Check Internet Connection:**
+   ```bash
+   ping api.supabase.com
+   ```
+
+2. **Manual Update:**
+   ```bash
+   npm update -g supabase
+   # or
+   scoop update supabase
+   ```
+
+3. **Firewall Check:**
+   - Temporarily disable firewall
+   - Add exception for Supabase CLI
+   - Check proxy settings
+
+#### "Login failed" Error
+**Symptoms:**
+- Browser doesn't open for OAuth
+- Login process hangs or fails
+- Access token not created
+
+**Solutions:**
+1. **Browser Issues:**
+   - Clear browser cache and cookies
+   - Try a different browser
+   - Check default browser settings
+
+2. **Network Issues:**
+   - Check if corporate network blocks OAuth
+   - Try using a VPN
+   - Verify DNS resolution
+
+3. **Manual Login:**
+   ```bash
+   supabase login
+   ```
+
+#### "Access token not created" Error
+**Symptoms:**
+- Login completes but no token file
+- `%USERPROFILE%\.supabase\access-token` missing
+
+**Solutions:**
+1. **Permission Issues:**
+   - Run command prompt as administrator
+   - Check folder permissions
+   - Create `.supabase` folder manually
+
+2. **Token Location:**
+   - Verify correct path: `%USERPROFILE%\.supabase\`
+   - Check if token exists in different location
+   - Run `dir %USERPROFILE%\.supabase` to verify
+
+#### "Network timeout during login" Error
+**Symptoms:**
+- Connection timeout errors
+- SSL/TLS certificate issues
+
+**Solutions:**
+1. **Proxy/Firewall:**
+   - Configure proxy settings
+   - Add supabase.com to firewall whitelist
+   - Check corporate network policies
+
+2. **DNS Issues:**
+   - Try different DNS servers
+   - Flush DNS cache: `ipconfig /flushdns`
+   - Verify DNS resolution
+
+### Verification Checklist
+
+Use this checklist to systematically verify CLI setup:
+
+1. **Check CLI Version:**
+   ```bash
+   supabase --version
+   ```
+   Expected: Version number displayed
+
+2. **Verify Access Token:**
+   ```bash
+   dir "%USERPROFILE%\.supabase\access-token"
+   ```
+   Expected: File exists with recent timestamp
+
+3. **Test API Connectivity:**
+   ```bash
+   supabase projects list
+   ```
+   Expected: List of your projects displayed
+
+4. **Check Environment Variables:**
+   ```bash
+   echo %PATH%
+   ```
+   Expected: Supabase CLI directory in PATH
+
+### Error Code Reference Table
+
+| Exit Code | Meaning | Solution |
+|-----------|---------|----------|
+| 0 | Success | Operation completed successfully |
+| 1 | General Error | Check log for specific error message |
+| 2 | File Not Found | CLI not installed or not in PATH |
+| 3 | Network Error | Check internet connection, firewall |
+| 4 | Authentication Error | Re-run `supabase login` |
+| 5 | Permission Denied | Run as administrator |
+
+### Log File Analysis Guide
+
+**How to read `CLI_SETUP_LOG.txt`:**
+1. **Timestamps:** Each entry shows when the operation occurred
+2. **ERROR Keywords:** Look for "ERROR" to identify problems
+3. **Exit Codes:** Note numeric codes for troubleshooting
+4. **Success Messages:** Confirm completed operations
+
+**Common Log Patterns:**
+- `ERROR: Supabase CLI not found` → Installation issue
+- `ERROR: Authentication verification failed` → Login issue
+- `ERROR: API connectivity failed` → Network issue
+
+### Quick Fix Commands
+
+Copy and paste these commands for common issues:
+
+```bash
+# Reset authentication
+del "%USERPROFILE%\.supabase\access-token"
+supabase login
+
+# Reinstall CLI (npm)
+npm uninstall -g supabase
+npm install -g supabase
+
+# Test connectivity
+ping api.supabase.com
+nslookup api.supabase.com
+
+# Check version and update
+supabase --version
+supabase update
+```
+
+## Previous Issues We Encountered
 
 1. **Config.toml parsing errors**
 2. **Connection timeouts to the remote database**
@@ -55,30 +249,37 @@ The connection errors are likely due to:
 
 ### 3. Steps to Make CLI Migration Work
 
+**Important:** Complete Phase 1 first by running `setup_cli.bat` before proceeding with these steps.
+
 #### Step 1: Update the Supabase CLI
 ```bash
 supabase update
 ```
+*This is handled by setup_cli.bat*
 
 #### Step 2: Login to Supabase
 ```bash
 supabase login
 ```
+*This is handled by setup_cli.bat - use verify_auth.bat to confirm*
 
 #### Step 3: Link to Your Project
 ```bash
 supabase link --project-ref tzmpwqiaqalrdwdslmkx
 ```
+*Ensure config.toml exists and contains the project ref*
 
 #### Step 4: Check Status
 ```bash
 supabase status
 ```
+*Verify successful connection before proceeding*
 
 #### Step 5: Push Migrations
 ```bash
 supabase db push
 ```
+*Execute migration to remote database*
 
 ### 4. Alternative: Use a Different Region
 
