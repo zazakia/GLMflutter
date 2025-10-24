@@ -54,7 +54,7 @@ dependencies:
   http: ^1.1.2
   
   # Environment variables
-  flutter_dotenv: ^6.0.0
+  flutter_dotenv: 5.1.0
   
   # Date/time handling
   table_calendar: ^3.0.9
@@ -84,10 +84,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  mocktail: ^1.0.0
 
 flutter:
   uses-material-design: true
   assets:
     - .env
+    - .env.test
     - assets/images/
     - assets/icons/

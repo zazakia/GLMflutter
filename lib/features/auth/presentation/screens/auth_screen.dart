@@ -3,8 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/services/supabase_service.dart';
+import '../../../../core/widgets/supabase_connection_indicator.dart';
+
 class AuthScreen extends ConsumerStatefulWidget {
-  const AuthScreen({super.key});
+  const AuthScreen({super.key, this.isDevMode});
+
+  final bool? isDevMode;
 
   @override
   ConsumerState<AuthScreen> createState() => _AuthScreenState();
@@ -17,7 +22,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   bool _isLogin = true;
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _isDevMode = const bool.fromEnvironment('dart.vm.product') == false;
+  bool get _isDevMode => widget.isDevMode ?? const bool.fromEnvironment('dart.vm.product') == false;
 
   static const String appName = 'Job Order Management';
   static const Color successColor = Color(0xFF388E3C);
@@ -41,13 +46,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     try {
       if (_isLogin) {
         // Login
-        await Supabase.instance.client.auth.signInWithPassword(
+        await SupabaseService.client.auth.signInWithPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
       } else {
         // Register
-        await Supabase.instance.client.auth.signUp(
+        await SupabaseService.client.auth.signUp(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
@@ -95,14 +100,30 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     });
 
     try {
+      // DEBUG: Log Supabase configuration
+      debugPrint('=== DEBUG: Supabase Configuration ===');
+      debugPrint('URL: ${SupabaseService.supabaseUrl}');
+      debugPrint('Anon Key: ${SupabaseService.supabaseAnonKey.substring(0, 10)}...');
+      debugPrint('Client initialized: ${SupabaseService.client != null}');
+      
+      // DEBUG: Check if user exists before attempting login
+      debugPrint('=== DEBUG: Attempting Demo Login ===');
+      debugPrint('Email: admin@demo-company.com');
+      debugPrint('Password: demo123456');
+      
       // Try to sign in with demo credentials
-      await Supabase.instance.client.auth.signInWithPassword(
+      final response = await SupabaseService.client.auth.signInWithPassword(
         email: 'admin@demo-company.com',
         password: 'demo123456',
       );
       
+      debugPrint('=== DEBUG: Login Response ===');
+      debugPrint('Session: ${response.session != null}');
+      debugPrint('User: ${response.user?.email}');
+      debugPrint('Error: ${response.user?.isAnonymous == true ? 'Anonymous user' : 'Authenticated user'}');
+      
       // If that fails, we'll show an error message
-      if (Supabase.instance.client.auth.currentSession == null) {
+      if (SupabaseService.client.auth.currentSession == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -112,7 +133,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           );
         }
       }
+    } on AuthException catch (e) {
+      debugPrint('=== DEBUG: AuthException ===');
+      debugPrint('Error Code: ${e.statusCode}');
+      debugPrint('Error Message: ${e.message}');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Auth Error (${e.statusCode}): ${e.message}'),
+            backgroundColor: errorColor,
+          ),
+        );
+      }
     } catch (e) {
+      debugPrint('=== DEBUG: General Exception ===');
+      debugPrint('Error: $e');
+      debugPrint('Error Type: ${e.runtimeType}');
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -178,8 +216,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   
                   if (_isDevMode) const SizedBox(height: 16),
                   
+                  // Supabase Connection Indicator (only in development mode)
+                  if (_isDevMode)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 16.0),
+                      child: SupabaseConnectionIndicator(
+                        compact: true,
+                        showRetryButton: true,
+                      ),
+                    ),
+                  
                   // Email Field
                   TextFormField(
+                    key: const Key('email_field'),
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
@@ -200,6 +249,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   
                   // Password Field
                   TextFormField(
+                    key: const Key('password_field'),
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(

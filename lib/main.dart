@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'features/auth/presentation/screens/auth_screen.dart';
+import 'core/services/supabase_service.dart';
+import 'core/widgets/supabase_connection_indicator.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,11 +15,24 @@ void main() async {
   // Load environment variables
   await dotenv.load(fileName: ".env");
   
-  // Initialize Supabase
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
+  // DEBUG: Log environment variables
+  debugPrint('=== DEBUG: Environment Variables ===');
+  debugPrint('SUPABASE_URL: ${dotenv.env['SUPABASE_URL']}');
+  debugPrint('SUPABASE_ANON_KEY: ${dotenv.env['SUPABASE_ANON_KEY']?.substring(0, 10)}...');
+  debugPrint('Environment loaded: ${dotenv.env['ENVIRONMENT']}');
+  
+  try {
+    // Initialize Supabase
+    await Supabase.initialize(
+      url: dotenv.env['SUPABASE_URL']!,
+      anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    );
+    debugPrint('=== DEBUG: Supabase Initialization Successful ===');
+  } catch (e) {
+    debugPrint('=== DEBUG: Supabase Initialization Failed ===');
+    debugPrint('Error: $e');
+    debugPrint('Error Type: ${e.runtimeType}');
+  }
   
   runApp(
     const ProviderScope(
@@ -60,7 +75,7 @@ class JobOrderManagementApp extends ConsumerWidget {
       routerConfig: GoRouter(
         initialLocation: '/',
         redirect: (context, state) {
-          final isAuthenticated = Supabase.instance.client.auth.currentSession != null;
+          final isAuthenticated = SupabaseService.client.auth.currentSession != null;
           final isAuthRoute = state.uri.toString() == '/';
           
           if (!isAuthenticated && !isAuthRoute) {
@@ -82,7 +97,14 @@ class JobOrderManagementApp extends ConsumerWidget {
             path: '/home',
             builder: (context, state) => const Scaffold(
               body: Center(
-                child: Text('Home Screen - Coming Soon'),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Home Screen - Coming Soon'),
+                    SizedBox(height: 20),
+                    SupabaseConnectionStatusWidget(),
+                  ],
+                ),
               ),
             ),
           ),
